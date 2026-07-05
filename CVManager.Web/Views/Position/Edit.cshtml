@@ -1,0 +1,148 @@
+﻿@model CVManager.Core.Entities.Position
+
+@{
+    ViewData["Title"] = "Edit Position";
+    var allAttributes = ViewBag.AllAttributes as List<CVManager.Core.Entities.Attribute>;
+    var selectedAttributes = ViewBag.SelectedAttributes as List<int> ?? new List<int>();
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<form asp-action="Edit" asp-route-id="@Model.Id" method="post">
+    <input asp-for="Id" type="hidden" />
+
+    <div class="row">
+        <div class="col-md-8">
+            <div class="mb-3">
+                <label asp-for="Title" class="form-label"></label>
+                <input asp-for="Title" class="form-control" required />
+                <span asp-validation-for="Title" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Company" class="form-label"></label>
+                <input asp-for="Company" class="form-control" />
+                <span asp-validation-for="Company" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Level" class="form-label"></label>
+                <select asp-for="Level"
+                        class="form-select"
+                        asp-items="Html.GetEnumSelectList<CVManager.Core.Entities.PositionLevel>()">
+                    <option value="">-- Select Level --</option>
+                </select>
+                <span asp-validation-for="Level" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Description" class="form-label"></label>
+                <textarea asp-for="Description" class="form-control" rows="3"></textarea>
+                <span asp-validation-for="Description" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="AccessType" class="form-label"></label>
+                <select asp-for="AccessType"
+                        class="form-select"
+                        asp-items="Html.GetEnumSelectList<CVManager.Core.Entities.AccessType>()">
+                </select>
+                <span asp-validation-for="AccessType" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="AccessRules" class="form-label">
+                    Access Rules (JSON)
+                </label>
+                <textarea asp-for="AccessRules"
+                          class="form-control"
+                          rows="3"
+                          placeholder='e.g., [{"attribute":"English Level","operator":">","value":"7.0"}]'>
+                </textarea>
+                <small class="text-muted">
+                    Define filters for restricted access. Leave empty if Public.
+                </small>
+                <span asp-validation-for="AccessRules" class="text-danger"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="MaxProjects" class="form-label">
+                    Max Projects in CV
+                </label>
+                <input asp-for="MaxProjects"
+                       type="number"
+                       class="form-control"
+                       min="1" />
+                <span asp-validation-for="MaxProjects" class="text-danger"></span>
+            </div>
+        </div>
+
+        <!-- Attribute Selection -->
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header">
+                    <h5>Select Attributes</h5>
+                    <small class="text-muted">
+                        Check attributes to include in this position's CV template.
+                    </small>
+                </div>
+
+                <div class="card-body" style="max-height:500px; overflow-y:auto;">
+                    <input type="text"
+                           class="form-control mb-2"
+                           id="attrFilter"
+                           placeholder="Filter attributes..." />
+
+                    @if (allAttributes != null)
+                    {
+                        foreach (var attr in allAttributes)
+                        {
+                            <div class="form-check attribute-item">
+                                <input class="form-check-input"
+                                       type="checkbox"
+                                       name="selectedAttributeIds"
+                                       value="@attr.Id"
+                                       id="attr_@attr.Id"
+                                       @(selectedAttributes.Contains(attr.Id) ? "checked" : null) />
+
+                                <label class="form-check-label" for="attr_@attr.Id">
+                                    @attr.Name
+                                    <small class="text-muted">
+                                        (@attr.Category)
+                                    </small>
+                                </label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p class="text-muted">No attributes available.</p>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">
+        Save Changes
+    </button>
+
+    <a asp-action="Index" class="btn btn-secondary mt-3">
+        Cancel
+    </a>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.getElementById('attrFilter').addEventListener('input', function () {
+            const filter = this.value.toLowerCase();
+
+            document.querySelectorAll('.attribute-item').forEach(item => {
+                const text = item.textContent.toLowerCase();
+                item.style.display = text.includes(filter) ? '' : 'none';
+            });
+        });
+    </script>
+}

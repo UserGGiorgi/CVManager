@@ -1,0 +1,106 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - CV Manager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+            <div class="container">
+                <a class="navbar-brand" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-file-text"></i> CV Manager
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <!-- Search Bar -->
+                    <form class="d-flex mx-auto" asp-controller="Home" asp-action="Search" method="get">
+                        <div class="input-group" style="max-width: 400px;">
+                            <input type="text" class="form-control" name="q" placeholder="Search positions, CVs..." />
+                            <button class="btn btn-light" type="submit">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
+
+                    <ul class="navbar-nav ms-auto">
+                        @if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                                <i class="bi bi-person-circle"></i> @User.Identity.Name
+                            </a>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" asp-controller="Profile" asp-action="Index">My Profile</a></li>
+                                <li><a class="dropdown-item" asp-controller="CV" asp-action="Index">My CVs</a></li>
+                                @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
+                                    {
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Position" asp-action="Index">Manage Positions</a></li>
+                                <li><a class="dropdown-item" asp-controller="Attribute" asp-action="Index">Attribute Library</a></li>
+                                    }
+                                @if (User.IsInRole("Admin"))
+                                    {
+                                <li><hr class="dropdown-divider" /></li>
+                                <li><a class="dropdown-item" asp-controller="Admin" asp-action="Index">Admin Panel</a></li>
+                                    }
+                                <li><hr class="dropdown-divider" /></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post">
+                                        <button type="submit" class="dropdown-item">Logout</button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </li>
+                        }
+                        else
+                        {
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Login">Login</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" asp-controller="Account" asp-action="Register">Register</a>
+                        </li>
+                        }
+
+                        <!-- Theme Toggle -->
+                        <li class="nav-item">
+                            <button id="themeToggle" class="btn btn-link nav-link" onclick="toggleTheme()">
+                                <i class="bi bi-moon-stars"></i>
+                            </button>
+                        </li>
+
+                        <!-- Language Selector -->
+                        <li class="nav-item">
+                            <select id="languageSelect" class="form-select form-select-sm" onchange="changeLanguage(this.value)">
+                                <option value="en">EN</option>
+                                <option value="ka">KA</option>
+                            </select>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <main role="main" class="container py-4">
+        @RenderBody()
+    </main>
+
+    <footer class="footer mt-auto py-3 bg-light">
+        <div class="container text-center">
+            <span class="text-muted">© @DateTime.Now.Year - CV Manager</span>
+        </div>
+    </footer>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

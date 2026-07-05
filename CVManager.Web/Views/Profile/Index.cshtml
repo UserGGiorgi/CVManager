@@ -1,0 +1,426 @@
+﻿@{
+    ViewData["Title"] = "My Profile";
+    var user = ViewBag.User as CVManager.Core.Entities.User;
+    var profileAttributes = ViewBag.ProfileAttributes as List<CVManager.Core.Entities.ProfileAttribute>;
+    var projects = ViewBag.Projects as List<CVManager.Core.Entities.Project>;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>My Profile</h2>
+    <span id="saveStatus" class="text-muted">All changes saved</span>
+</div>
+
+<ul class="nav nav-tabs" id="profileTabs" role="tablist">
+    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#meTab">Me</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#infoTab">Info</a></li>
+    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#projectsTab">Projects</a></li>
+</ul>
+
+<div class="tab-content pt-3">
+    <!-- Me Tab -->
+    <div class="tab-pane fade show active" id="meTab">
+        <div class="mb-3">
+            <label class="form-label">First Name</label>
+            <input type="text" class="form-control auto-save" data-field="firstName" value="@user?.FirstName" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Last Name</label>
+            <input type="text" class="form-control auto-save" data-field="lastName" value="@user?.LastName" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Location</label>
+            <input type="text" class="form-control auto-save" data-field="location" value="@user?.Location" />
+        </div>
+        <div class="mb-3">
+            <label class="form-label">Photo</label>
+            <input type="file" class="form-control" disabled />
+            <small class="text-muted">Photo upload coming soon (cloud storage)</small>
+        </div>
+    </div>
+
+    <!-- Info Tab -->
+    <div class="tab-pane fade" id="infoTab">
+        <p>
+            Attributes from the library (to be managed by Recruiters).<br />
+            <small>You can add/remove attributes and fill values.</small>
+        </p>
+        <div id="attributesContainer">
+            @if (profileAttributes != null && profileAttributes.Any())
+            {
+                foreach (var pa in profileAttributes)
+                {
+                    <div class="mb-2" data-attribute-id="@pa.AttributeId">
+                        <strong>@pa.Attribute.Name</strong> (@pa.Attribute.Category)
+                        <input type="text" class="form-control attribute-value"
+                               data-attribute-id="@pa.AttributeId"
+                               data-version="@pa.Version"
+                               value="@pa.Value" />
+                        <button class="btn btn-sm btn-outline-danger remove-attribute">Remove</button>
+                    </div>
+                }
+            }
+            else
+            {
+                <p id="noAttributesMsg">No attributes added yet. Click the button below to add one.</p>
+            }
+        </div>
+
+        <!-- Add Attribute Button (now inside infoTab) -->
+        <button type="button" class="btn btn-outline-primary mt-2" data-bs-toggle="modal" data-bs-target="#addAttributeModal">
+            <i class="bi bi-plus-circle"></i> Add Attribute
+        </button>
+    </div>
+
+    <!-- Projects Tab -->
+    <div class="tab-pane fade" id="projectsTab">
+        <button class="btn btn-primary mb-3" id="addProjectBtn">Add Project</button>
+        <div id="projectsContainer">
+            @if (projects != null)
+            {
+                foreach (var p in projects)
+                {
+                    <div class="card mb-3"
+                         data-project-id="@p.Id"
+                         data-name="@p.Name"
+                         data-description="@p.Description"
+                         data-startdate="@p.StartDate.ToString("yyyy-MM-dd")"
+                         data-enddate="@p.EndDate?.ToString("yyyy-MM-dd")"
+                         data-technologies="@string.Join(",", p.Technologies)">
+                        <div class="card-body">
+                            <h5 class="project-name">@p.Name</h5>
+                            <p class="project-dates">@p.StartDate.ToString("yyyy-MM-dd") – @(p.EndDate?.ToString("yyyy-MM-dd") ?? "Present")</p>
+                            <div class="project-techs">@string.Join(", ", p.Technologies)</div>
+                            <p class="project-desc">@Html.Raw(Markdig.Markdown.ToHtml(p.Description ?? ""))</p>
+                            <button class="btn btn-sm btn-outline-secondary edit-project">Edit</button>
+                            <button class="btn btn-sm btn-outline-danger delete-project">Delete</button>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Attribute Selection Modal -->
+<div class="modal fade" id="addAttributeModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Select Attribute</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row mb-2">
+                    <div class="col-md-6">
+                        <input type="text" id="attrSearch" class="form-control" placeholder="Search by name..." />
+                    </div>
+                    <div class="col-md-4">
+                        <select id="attrCategoryFilter" class="form-select">
+                            <option value="">All Categories</option>
+                            <option>Certification</option>
+                            <option>Domain Knowledge</option>
+                            <option>Personal Information</option>
+                            <option>Soft Skills</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="attrSearchResults" class="list-group" style="max-height:400px; overflow-y:auto;">
+                    <!-- dynamically filled -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Project Edit Modal -->
+<div class="modal fade" id="projectModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="projectModalTitle">New Project</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" id="projectId" />
+                <div class="mb-3">
+                    <label class="form-label">Name</label>
+                    <input type="text" id="projectName" class="form-control" required />
+                </div>
+                <div class="row mb-3">
+                    <div class="col">
+                        <label class="form-label">Start Date</label>
+                        <input type="date" id="projectStartDate" class="form-control" />
+                    </div>
+                    <div class="col">
+                        <label class="form-label">End Date</label>
+                        <input type="date" id="projectEndDate" class="form-control" />
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Description (Markdown)</label>
+                    <textarea id="projectDescription" class="form-control" rows="5"></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Technologies</label>
+                    <input id="projectTechnologies" class="form-control" placeholder="Type and press Enter" />
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="saveProjectBtn">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@@yaireo/tagify"></script>
+    <link href="https://cdn.jsdelivr.net/npm/@@yaireo/tagify/dist/tagify.css" rel="stylesheet" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/easymde/dist/easymde.min.js"></script>
+
+    <script>
+        // ==================== GLOBALS ====================
+        const saveStatus = document.getElementById('saveStatus');
+        let dirtyFields = new Set();
+        let easyMDE, tagify;
+        let editingProjectId = null;
+
+        // ==================== AUTO-SAVE (Me Tab) ====================
+        document.querySelectorAll('.auto-save').forEach(input => {
+            input.addEventListener('change', () => {
+                dirtyFields.add(input);
+                scheduleSave();
+            });
+        });
+
+        let saveTimeout;
+        function scheduleSave() {
+            clearTimeout(saveTimeout);
+            saveTimeout = setTimeout(saveChanges, 7000);
+        }
+
+        async function saveChanges() {
+            if (dirtyFields.size === 0) return;
+            saveStatus.textContent = 'Saving...';
+            saveStatus.className = 'text-warning';
+            const promises = [];
+            dirtyFields.forEach(input => {
+                const field = input.dataset.field;
+                const value = input.value;
+                promises.push(
+                    axios.put('/api/profile/field', { fieldName: field, value: value })
+                );
+                dirtyFields.delete(input);
+            });
+            try {
+                await Promise.all(promises);
+                saveStatus.textContent = 'All changes saved';
+                saveStatus.className = 'text-success';
+            } catch (err) {
+                saveStatus.textContent = 'Error saving';
+                saveStatus.className = 'text-danger';
+            }
+        }
+
+        // ==================== ATTRIBUTES (Info Tab) ====================
+        // Bind existing attribute inputs and remove buttons
+        function bindAttributeEvents(input, removeBtn) {
+            input.addEventListener('change', async function() {
+                const attributeId = this.dataset.attributeId;
+                const version = this.dataset.version;
+                const value = this.value;
+                try {
+                    const res = await axios.put('/api/profile/attribute', {
+                        attributeId: parseInt(attributeId),
+                        value: value,
+                        version: version
+                    });
+                    this.dataset.version = res.data.version;
+                    saveStatus.textContent = 'Saved';
+                    saveStatus.className = 'text-success';
+                } catch (err) {
+                    if (err.response && err.response.status === 409) {
+                        alert('Conflict: This attribute was modified elsewhere. Please refresh.');
+                    } else {
+                        alert('Error saving');
+                    }
+                }
+            });
+
+            removeBtn.addEventListener('click', async function() {
+                const div = this.closest('div[data-attribute-id]');
+                const attributeId = div.dataset.attributeId;
+                await axios.delete(`/api/profile/attribute/${attributeId}`);
+                div.remove();
+                // Show message if no attributes left
+                if (document.querySelectorAll('#attributesContainer > div[data-attribute-id]').length === 0) {
+                    document.getElementById('noAttributesMsg')?.classList.remove('d-none');
+                }
+            });
+        }
+
+        // Initialize all existing attribute rows
+        document.querySelectorAll('#attributesContainer > div[data-attribute-id]').forEach(div => {
+            const input = div.querySelector('.attribute-value');
+            const removeBtn = div.querySelector('.remove-attribute');
+            bindAttributeEvents(input, removeBtn);
+        });
+
+        // ==================== ATTRIBUTE SEARCH MODAL ====================
+        const searchInput = document.getElementById('attrSearch');
+        const categoryFilter = document.getElementById('attrCategoryFilter');
+        const resultsDiv = document.getElementById('attrSearchResults');
+        let attributeModal;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            attributeModal = new bootstrap.Modal(document.getElementById('addAttributeModal'));
+        });
+
+        async function searchAttributes() {
+            const q = searchInput.value.trim();
+            const category = categoryFilter.value;
+            const res = await axios.get('/api/attributes/search', { params: { q, category } });
+            resultsDiv.innerHTML = res.data.map(attr => `
+                <a href="#" class="list-group-item list-group-item-action"
+                   data-id="${attr.id}" data-name="${attr.name}">
+                    <strong>${attr.name}</strong> (${attr.category}) - ${attr.dataType}
+                    <button class="btn btn-sm btn-outline-success float-end">Add</button>
+                </a>
+            `).join('');
+        }
+
+        searchInput.addEventListener('input', debounce(searchAttributes, 300));
+        categoryFilter.addEventListener('change', searchAttributes);
+
+        function debounce(func, wait) {
+            let timeout;
+            return function(...args) {
+                clearTimeout(timeout);
+                timeout = setTimeout(() => func.apply(this, args), wait);
+            };
+        }
+
+        // Add attribute when clicking the "Add" button in the modal
+        resultsDiv.addEventListener('click', async (e) => {
+            const btn = e.target.closest('button');
+            if (!btn) return;
+            e.preventDefault();
+            const item = btn.closest('.list-group-item');
+            const attrId = parseInt(item.dataset.id);
+            const attrName = item.dataset.name;
+            try {
+                const res = await axios.put('/api/profile/attribute', {
+                    attributeId: attrId,
+                    value: '',
+                    version: '00000000-0000-0000-0000-000000000000'
+                });
+                // Add to DOM
+                const container = document.getElementById('attributesContainer');
+                const noMsg = document.getElementById('noAttributesMsg');
+                if (noMsg) noMsg.classList.add('d-none');
+                const div = document.createElement('div');
+                div.className = 'mb-2';
+                div.setAttribute('data-attribute-id', attrId);
+                div.innerHTML = `
+                    <strong>${attrName}</strong>
+                    <input type="text" class="form-control attribute-value"
+                           data-attribute-id="${attrId}" data-version="${res.data.version}" value="" />
+                    <button class="btn btn-sm btn-outline-danger remove-attribute">Remove</button>
+                `;
+                container.appendChild(div);
+                // Bind events
+                bindAttributeEvents(div.querySelector('.attribute-value'), div.querySelector('.remove-attribute'));
+                // Hide modal
+                attributeModal.hide();
+            } catch (err) {
+                if (err.response && err.response.status === 409) {
+                    alert('Conflict: This attribute was added by another process. Please refresh.');
+                } else {
+                    alert('Error adding attribute');
+                }
+            }
+        });
+
+        // ==================== PROJECTS TAB ====================
+        const projectModal = new bootstrap.Modal(document.getElementById('projectModal'));
+        document.addEventListener('DOMContentLoaded', function() {
+            easyMDE = new EasyMDE({ element: document.getElementById('projectDescription') });
+            tagify = new Tagify(document.getElementById('projectTechnologies'), {
+                whitelist: [],
+                dropdown: { maxItems: 20 }
+            });
+        });
+
+        // Open modal for new project
+        document.getElementById('addProjectBtn').addEventListener('click', () => openProjectModal());
+
+        // Open modal for edit (delegated)
+        document.getElementById('projectsContainer').addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-project');
+            const deleteBtn = e.target.closest('.delete-project');
+            const card = editBtn?.closest('.card') || deleteBtn?.closest('.card');
+            if (!card) return;
+
+            if (editBtn) {
+                const project = {
+                    id: card.dataset.projectId,
+                    name: card.dataset.name,
+                    description: card.dataset.description,
+                    startDate: card.dataset.startdate || null,
+                    endDate: card.dataset.enddate || null,
+                    technologies: card.dataset.technologies ? card.dataset.technologies.split(',') : []
+                };
+                openProjectModal(project);
+            } else if (deleteBtn) {
+                if (confirm('Delete this project?')) {
+                    const projectId = card.dataset.projectId;
+                    axios.delete(`/api/profile/project/${projectId}`).then(() => {
+                        card.remove();
+                    }).catch(() => alert('Error deleting project'));
+                }
+            }
+        });
+
+        function openProjectModal(projectData = null) {
+            editingProjectId = projectData ? projectData.id : null;
+            document.getElementById('projectModalTitle').textContent = projectData ? 'Edit Project' : 'New Project';
+            document.getElementById('projectId').value = projectData ? projectData.id : '';
+            document.getElementById('projectName').value = projectData ? projectData.name : '';
+            document.getElementById('projectStartDate').value = projectData ? projectData.startDate || '' : '';
+            document.getElementById('projectEndDate').value = projectData ? projectData.endDate || '' : '';
+            easyMDE.value(projectData ? projectData.description : '');
+            tagify.removeAllTags();
+            if (projectData && projectData.technologies) {
+                tagify.addTags(projectData.technologies.map(t => ({ value: t })));
+            }
+            projectModal.show();
+        }
+
+        document.getElementById('saveProjectBtn').addEventListener('click', async () => {
+            const project = {
+                name: document.getElementById('projectName').value.trim(),
+                description: easyMDE.value(),
+                startDate: document.getElementById('projectStartDate').value || null,
+                endDate: document.getElementById('projectEndDate').value || null,
+                technologies: tagify.value.map(t => t.value)
+            };
+            if (!project.name) {
+                alert('Name is required');
+                return;
+            }
+            try {
+                if (editingProjectId) {
+                    await axios.put(`/api/profile/project/${editingProjectId}`, project);
+                } else {
+                    await axios.post('/api/profile/project', project);
+                }
+                projectModal.hide();
+                location.reload(); // quick refresh; could be replaced with dynamic DOM update
+            } catch (err) {
+                alert('Error saving project');
+            }
+        });
+    </script>
+}

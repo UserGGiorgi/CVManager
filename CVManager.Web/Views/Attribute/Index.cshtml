@@ -1,0 +1,84 @@
+﻿@model IEnumerable<CVManager.Core.Entities.Attribute>
+@{
+    ViewData["Title"] = "Attribute Library";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@ViewData["Title"]</h2>
+    <div>
+        <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Attribute</a>
+        <button id="deleteSelectedBtn" class="btn btn-outline-danger" disabled><i class="bi bi-trash"></i> Delete Selected</button>
+    </div>
+</div>
+
+<!-- Search & Filter -->
+<form method="get" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input type="text" name="search" class="form-control" placeholder="Search attributes..." value="@Context.Request.Query["search"]" />
+    </div>
+    <div class="col-md-3">
+        <select name="category" class="form-select">
+            <option value="">All Categories</option>
+            @foreach (var cat in new[] { "Certification", "Domain Knowledge", "Personal Information", "Soft Skills" })
+            {
+                <option value="@cat" selected="@(Context.Request.Query["category"] == cat)">@cat</option>
+            }
+        </select>
+    </div>
+    <div class="col-md-2">
+        <button type="submit" class="btn btn-outline-secondary w-100">Filter</button>
+    </div>
+</form>
+
+<!-- Table with checkboxes and single toolbar -->
+<form id="attributeTableForm" method="post" asp-action="Delete" onsubmit="return confirm('Delete selected attributes?');">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th><input type="checkbox" id="selectAll" /></th>
+                <th>Name</th>
+                <th>Category</th>
+                <th>Type</th>
+                <th>Description</th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var attr in Model)
+            {
+                <tr>
+                    <td><input type="checkbox" class="attr-checkbox" name="selectedIds" value="@attr.Id" /></td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@attr.Id">@attr.Name</a>
+                    </td>
+                    <td>@attr.Category</td>
+                    <td>@attr.DataType</td>
+                    <td>@attr.Description</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</form>
+
+<script>
+    const selectAll = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.attr-checkbox');
+    const deleteBtn = document.getElementById('deleteSelectedBtn');
+
+    function updateDeleteButton() {
+        const anyChecked = document.querySelectorAll('.attr-checkbox:checked').length > 0;
+        deleteBtn.disabled = !anyChecked;
+    }
+
+    selectAll.addEventListener('change', function() {
+        checkboxes.forEach(cb => cb.checked = this.checked);
+        updateDeleteButton();
+    });
+
+    checkboxes.forEach(cb => cb.addEventListener('change', updateDeleteButton));
+
+    deleteBtn.addEventListener('click', function() {
+        const form = document.getElementById('attributeTableForm');
+        form.action = '@Url.Action("DeleteMultiple", "Attribute")';
+        form.submit();
+    });
+</script>

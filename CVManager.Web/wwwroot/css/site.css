@@ -1,0 +1,71 @@
+html {
+  font-size: 14px;
+}
+
+@media (min-width: 768px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+.btn:focus, .btn:active:focus, .btn-link.nav-link:focus, .form-control:focus, .form-check-input:focus {
+  box-shadow: 0 0 0 0.1rem white, 0 0 0 0.25rem #258cfb;
+}
+
+html {
+  position: relative;
+  min-height: 100%;
+}
+
+body {
+  margin-bottom: 60px;
+}
+/* Custom styles */
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+main {
+    flex: 1;
+}
+
+.footer {
+    margin-top: auto;
+}
+
+/* Table improvements */
+.table-hover tbody tr {
+    cursor: pointer;
+}
+
+    .table-hover tbody tr:hover {
+        background-color: rgba(var(--bs-primary-rgb), 0.05);
+    }
+
+/* Selected rows */
+.table tr.selected {
+    background-color: rgba(var(--bs-primary-rgb), 0.1);
+}
+
+/* Auto-save indicator */
+.auto-save-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.auto-save-saving {
+    background-color: var(--bs-warning);
+}
+
+.auto-save-saved {
+    background-color: var(--bs-success);
+}
+
+.auto-save-error {
+    background-color: var(--bs-danger);
+}
