@@ -1,44 +1,150 @@
-﻿@{
-    ViewData["Title"] = "CV Manager";
+﻿@using CVManager.Web.Models.ViewModels
+@model HomeViewModel
+@{
+    ViewData["Title"] = "CV Manager - Home";
 }
 
 <div class="row">
     <div class="col-md-8">
-        <h2>Latest Positions</h2>
-        <div class="alert alert-info">
-            <i class="bi bi-info-circle"></i> No positions yet. Recruiters can create position templates.
+        <!-- Latest Positions -->
+        <div class="card mb-4">
+            <div class="card-header">
+                <h4>Latest Positions</h4>
+            </div>
+            <div class="card-body">
+                @if (Model.LatestPositions.Any())
+                {
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>Company</th>
+                                <th>Level</th>
+                                <th>Access</th>
+                                <th>Updated</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pos in Model.LatestPositions)
+                            {
+                                <tr>
+                                    <td>@pos.Title</td>
+                                    <td>@pos.Company</td>
+                                    <td>@pos.Level</td>
+                                    <td>@pos.AccessType</td>
+                                    <td>@pos.UpdatedAt.ToString("g")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted">No positions yet.</p>
+                }
+            </div>
         </div>
-        <!-- We'll populate a table here later -->
     </div>
+
     <div class="col-md-4">
-        <div class="card mb-3">
+        <!-- Popular Positions -->
+        <div class="card mb-4">
             <div class="card-header">
-                <h5>Popular Positions</h5>
+                <h5>Most Popular Positions</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted">No data yet.</p>
+                @if (Model.PopularPositions.Any())
+                {
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>Title</th>
+                                <th>CVs</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var pos in Model.PopularPositions)
+                            {
+                                <tr>
+                                    <td>@pos.Title</td>
+                                    <td>@pos.CVs?.Count ?? 0</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+                else
+                {
+                    <p class="text-muted">No positions yet.</p>
+                }
             </div>
         </div>
-        <div class="card mb-3">
+
+        <!-- Tag Cloud -->
+        <div class="card mb-4">
             <div class="card-header">
-                <h5>Tag Cloud</h5>
+                <h5>Technology Tag Cloud</h5>
             </div>
             <div class="card-body">
-                <p class="text-muted">No tags yet.</p>
+                @if (Model.TagCloud.Any())
+                {
+                    <div class="d-flex flex-wrap gap-1">
+                        @foreach (var tag in Model.TagCloud)
+                        {
+                            <a href="@Url.Action("Search", "Home", new { q = tag })"
+                               class="btn btn-outline-secondary btn-sm">@tag</a>
+                        }
+                    </div>
+                }
+                else
+                {
+                    <p class="text-muted">No tags yet.</p>
+                }
             </div>
         </div>
+
+        <!-- Statistics -->
         <div class="card">
             <div class="card-header">
                 <h5>Statistics</h5>
             </div>
             <div class="card-body">
-                <ul class="list-unstyled">
-                    <li><i class="bi bi-file-text"></i> Total CVs: 0</li>
-                    <li><i class="bi bi-people"></i> Candidates: 0</li>
-                    <li><i class="bi bi-briefcase"></i> Recruiters: 0</li>
-                    <li><i class="bi bi-plus-circle"></i> New CVs (24h): 0</li>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Total Positions
+                        <span class="badge bg-primary rounded-pill">@Model.LatestPositions.Count</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Total CVs
+                        <span class="badge bg-primary rounded-pill">@Model.TotalCVs</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Candidates
+                        <span class="badge bg-primary rounded-pill">@Model.TotalCandidates</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        Recruiters
+                        <span class="badge bg-primary rounded-pill">@Model.TotalRecruiters</span>
+                    </li>
+                    <li class="list-group-item d-flex justify-content-between align-items-center">
+                        New CVs (24h)
+                        <span class="badge bg-success rounded-pill">@Model.NewCVs24h</span>
+                    </li>
                 </ul>
             </div>
         </div>
     </div>
+</div>
+
+<!-- Full-text Search Section -->
+<div class="text-center mt-4 mb-4">
+    <form asp-controller="Home" asp-action="Search" method="get" class="d-flex justify-content-center">
+        <div class="input-group" style="max-width: 600px;">
+            <input type="text" class="form-control form-control-lg" name="q"
+                   placeholder="Search positions, CVs, attributes..." />
+            <button class="btn btn-primary" type="submit">
+                <i class="bi bi-search"></i> Search
+            </button>
+        </div>
+    </form>
 </div>

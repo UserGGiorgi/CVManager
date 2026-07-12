@@ -1,0 +1,81 @@
+﻿@model IEnumerable<CVManager.Core.Entities.User>
+@{
+    ViewData["Title"] = "Admin Panel";
+    var userRoles = ViewBag.UserRoles as Dictionary<Guid, IList<string>>;
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<table class="table table-hover">
+    <thead>
+        <tr>
+            <th>Email</th>
+            <th>Name</th>
+            <th>Roles</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var user in Model)
+        {
+            var roles = userRoles?.ContainsKey(user.Id) == true ? userRoles[user.Id] : new List<string>();
+            var isBlocked = user.LockoutEnd != null && user.LockoutEnd > DateTime.UtcNow;
+            <tr>
+                <td>@user.Email</td>
+                <td>@user.FirstName @user.LastName</td>
+                <td>
+                    @string.Join(", ", roles)
+                </td>
+                <td>
+                    @if (isBlocked)
+                    {
+                        <span class="badge bg-danger">Blocked</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Active</span>
+                    }
+                </td>
+                <td>
+                    <!-- Block/Unblock -->
+                    <form asp-action="ToggleBlock" method="post" class="d-inline">
+                        <input type="hidden" name="id" value="@user.Id" />
+                        <button type="submit" class="btn btn-sm @(isBlocked ? "btn-outline-success" : "btn-outline-warning")">
+                            @(isBlocked ? "Unblock" : "Block")
+                        </button>
+                    </form>
+                    <!-- Delete -->
+                    <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('Delete this user?');">
+                        <input type="hidden" name="id" value="@user.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+                    </form>
+                    <!-- Role management (simplified dropdown) -->
+                    <div class="dropdown d-inline">
+                        <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                            Roles
+                        </button>
+                        <div class="dropdown-menu p-2" style="min-width: 200px;">
+                            @foreach (var role in new[] { "Candidate", "Recruiter", "Admin" })
+                            {
+                                var hasRole = roles.Contains(role);
+                                <form asp-action="ChangeRole" method="post" class="mb-1">
+                                    <input type="hidden" name="userId" value="@user.Id" />
+                                    <input type="hidden" name="role" value="@role" />
+                                    <input type="hidden" name="assign" value="@(hasRole ? "false" : "true")" />
+                                    <button type="submit" class="dropdown-item d-flex justify-content-between">
+                                        @role
+                                        @if (hasRole)
+                                        {
+                                            <span class="text-success"><i class="bi bi-check-lg"></i></span>
+                                        }
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </div>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

@@ -206,4 +206,49 @@ public class PositionController : Controller
         }
         return RedirectToAction(nameof(Index));
     }
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DuplicateMultiple(List<int> selectedIds)
+    {
+        if (selectedIds == null || !selectedIds.Any())
+            return RedirectToAction(nameof(Index));
+
+        foreach (var id in selectedIds)
+        {
+            var original = await _db.Positions
+                .Include(p => p.PositionAttributes)
+                .FirstOrDefaultAsync(p => p.Id == id);
+            if (original == null) continue;
+
+            var duplicate = new Position
+            {
+                Title = original.Title + " (Copy)",
+                Description = original.Description,
+                Company = original.Company,
+                Level = original.Level,
+                AccessType = original.AccessType,
+                AccessRules = original.AccessRules,
+                MaxProjects = original.MaxProjects,
+                ProjectTags = original.ProjectTags,
+                CreatedBy = User.GetUserId(),
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+            _db.Positions.Add(duplicate);
+            await _db.SaveChangesAsync();
+
+            foreach (var pa in original.PositionAttributes)
+            {
+                _db.PositionAttributes.Add(new PositionAttribute
+                {
+                    PositionId = duplicate.Id,
+                    AttributeId = pa.AttributeId,
+                    IsRequired = pa.IsRequired,
+                    Order = pa.Order
+                });
+            }
+            await _db.SaveChangesAsync();
+        }
+        return RedirectToAction(nameof(Index));
+    }
 }

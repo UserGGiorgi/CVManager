@@ -1,0 +1,54 @@
+﻿@model IEnumerable<CVManager.Core.Entities.CV>
+@{
+    ViewData["Title"] = "My CVs";
+}
+
+<h2>@ViewData["Title"]</h2>
+
+<p>
+    <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> Create CV</a>
+</p>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">
+        You haven't created any CVs yet. Click <strong>Create CV</strong> to start.
+    </div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Position</th>
+                <th>Status</th>
+                <th>Created</th>
+                <th>Updated</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cv in Model)
+            {
+                <tr>
+                    <td>@cv.Position.Title</td>
+                    <td>
+                        @if (cv.Status == CVManager.Core.Entities.CVStatus.Draft)
+                        {
+                            <span class="badge bg-warning">Draft</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-success">Published</span>
+                        }
+                    </td>
+                    <td>@cv.CreatedAt.ToString("g")</td>
+                    <td>@cv.UpdatedAt.ToString("g")</td>
+                    <td>
+                        <a asp-action="Edit" asp-route-id="@cv.Id" class="btn btn-sm btn-outline-primary">Edit</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

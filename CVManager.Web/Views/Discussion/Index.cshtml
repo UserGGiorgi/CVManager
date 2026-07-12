@@ -1,0 +1,88 @@
+﻿@model IEnumerable<CVManager.Core.Entities.DiscussionPost>
+@{
+    ViewData["Title"] = "Discussion";
+    var position = ViewBag.Position as CVManager.Core.Entities.Position;
+}
+
+<h2>Discussion: @position.Title</h2>
+
+<div id="postsContainer" class="mb-4">
+    @foreach (var post in Model)
+    {
+        <div class="card mb-2">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <strong>
+                        @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
+                        {
+                            <a asp-controller="Profile" asp-action="Public" asp-route-id="@post.AuthorId">@post.Author.FirstName @post.Author.LastName</a>
+                        }
+                        else
+                        {
+                            @($"{post.Author.FirstName} {post.Author.LastName}")
+                        }
+                    </strong>
+                    <small class="text-muted">@post.CreatedAt.ToString("g")</small>
+                </div>
+                <div class="mt-2 markdown-content">@Html.Raw(Markdig.Markdown.ToHtml(post.Content))</div>
+            </div>
+        </div>
+    }
+</div>
+
+<form id="postForm">
+    <input type="hidden" name="positionId" value="@position.Id" />
+    <div class="mb-3">
+        <textarea id="postContent" name="content" class="form-control" rows="3" placeholder="Write a comment... (Markdown supported)"></textarea>
+    </div>
+    <button type="submit" class="btn btn-primary">Post</button>
+</form>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/@@microsoft/signalr@latest/dist/browser/signalr.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <script>
+        const connection = new signalR.HubConnectionBuilder()
+            .withUrl("/discussionHub")
+            .build();
+
+        connection.start().then(function () {
+            connection.invoke("JoinPosition", @position.Id);
+        }).catch(function (err) {
+            console.error(err.toString());
+        });
+
+        connection.on("NewPost", function (post) {
+            const html = `
+                <div class="card mb-2">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between">
+                            <strong>${post.authorName}</strong>
+                            <small class="text-muted">${post.createdAt}</small>
+                        </div>
+                        <div class="mt-2">${marked.parse(post.content)}</div>
+                    </div>
+                </div>`;
+            document.getElementById('postsContainer').insertAdjacentHTML('beforeend', html);
+        });
+
+        document.getElementById('postForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const positionId = @position.Id;
+            const content = document.getElementById('postContent').value.trim();
+            if (!content) return;
+
+            const formData = new FormData();
+            formData.append('positionId', positionId);
+            formData.append('content', content);
+
+            const token = document.querySelector('input[name="__RequestVerificationToken"]').value;
+            await fetch('/Discussion/AddPost', {
+                method: 'POST',
+                body: formData,
+                headers: { 'RequestVerificationToken': token }
+            });
+            document.getElementById('postContent').value = '';
+        });
+    </script>
+}

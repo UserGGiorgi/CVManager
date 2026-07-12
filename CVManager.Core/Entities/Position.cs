@@ -17,6 +17,7 @@ public class Position
     // Navigation
     public User Creator { get; set; } = null!;
     public ICollection<PositionAttribute> PositionAttributes { get; set; } = new List<PositionAttribute>();
+    public List<string> ProjectTags { get; set; } = new List<string>();
     public ICollection<CV> CVs { get; set; } = new List<CV>();
     public ICollection<DiscussionPost> DiscussionPosts { get; set; } = new List<DiscussionPost>();
 }

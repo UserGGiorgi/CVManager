@@ -1,0 +1,60 @@
+﻿@using CVManager.Web.Models.ViewModels
+@model SearchResultsViewModel
+@{
+    ViewData["Title"] = "Search Results";
+}
+
+<h2>Search Results for "@Model.Query"</h2>
+
+@if (Model.Positions.Any())
+{
+    <h4>Positions</h4>
+    <table class="table table-hover mb-4">
+        <thead>
+            <tr><th>Title</th><th>Company</th><th>Level</th></tr>
+        </thead>
+        <tbody>
+            @foreach (var pos in Model.Positions)
+            {
+                <tr>
+                    <td>@pos.Title</td>
+                    <td>@pos.Company</td>
+                    <td>@pos.Level</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (Model.CVs.Any())
+{
+    <h4>CVs</h4>
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Candidate</th>
+                <th>Position</th>
+                <th>Status</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var cv in Model.CVs)
+            {
+                <tr>
+                    <td>@cv.Candidate.FirstName @cv.Candidate.LastName</td>
+                    <td>@cv.Position.Title</td>
+                    <td>@cv.Status</td>
+                    <td>
+                        <a asp-controller="CV" asp-action="View" asp-route-id="@cv.Id" class="btn btn-sm btn-outline-primary">View</a>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}
+
+@if (!Model.Positions.Any() && !Model.CVs.Any())
+{
+    <p class="text-muted">No results found.</p>
+}

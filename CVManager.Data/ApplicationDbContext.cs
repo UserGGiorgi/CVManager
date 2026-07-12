@@ -63,7 +63,7 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, 
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
-        // Position configuration
+        // Position configuration (merged)
         builder.Entity<Position>(entity =>
         {
             entity.Property(p => p.Title).HasMaxLength(200).IsRequired();
@@ -71,6 +71,20 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, 
                   .WithMany()
                   .HasForeignKey(p => p.CreatedBy)
                   .OnDelete(DeleteBehavior.Restrict);
+
+            // ProjectTags JSON conversion
+            entity.Property(p => p.ProjectTags)
+                  .HasConversion(
+                      v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
+                      v => System.Text.Json.JsonSerializer.Deserialize<List<string>>(v, (System.Text.Json.JsonSerializerOptions?)null) ?? new List<string>()
+                  )
+                  .Metadata.SetValueComparer(
+                      new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>>(
+                          (c1, c2) => c1!.SequenceEqual(c2!),
+                          c => c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                          c => c.ToList()
+                      )
+                  );
         });
 
         // PositionAttribute configuration
@@ -87,10 +101,10 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, 
                   .OnDelete(DeleteBehavior.Restrict);
         });
 
+        // Project configuration (REQUIRED — this was missing)
         builder.Entity<Project>(entity =>
         {
             entity.Property(p => p.Name).HasMaxLength(200).IsRequired();
-
             entity.Property(p => p.Technologies)
                   .HasConversion(
                       v => System.Text.Json.JsonSerializer.Serialize(v, (System.Text.Json.JsonSerializerOptions?)null),
@@ -103,7 +117,6 @@ public class ApplicationDbContext : IdentityDbContext<User, IdentityRole<Guid>, 
                           c => c.ToList()
                       )
                   );
-
             entity.HasOne(p => p.User)
                   .WithMany(u => u.Projects)
                   .HasForeignKey(p => p.UserId)

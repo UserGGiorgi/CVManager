@@ -1,0 +1,159 @@
+﻿@model CVManager.Core.Entities.CV
+@{
+    ViewData["Title"] = Model.Status == CVManager.Core.Entities.CVStatus.Draft ? "Edit CV" : "View CV";
+    var isReadOnly = ViewBag.IsReadOnly as bool? ?? false;
+    var profileAttributes = ViewBag.ProfileAttributes as List<CVManager.Core.Entities.ProfileAttribute>;
+    var projects = ViewBag.Projects as List<CVManager.Core.Entities.Project>;
+    var positionAttributes = Model.Position.PositionAttributes.OrderBy(pa => pa.Order);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h2>@ViewData["Title"]: @Model.Position.Title</h2>
+    <div>
+        @if (!isReadOnly && Model.Status == CVManager.Core.Entities.CVStatus.Draft)
+        {
+            <form asp-action="Publish" method="post" class="d-inline">
+                <input type="hidden" name="id" value="@Model.Id" />
+                <button type="submit" class="btn btn-success" id="publishBtn">
+                    <i class="bi bi-check-circle"></i> Publish
+                </button>
+            </form>
+        }
+        @if (User.IsInRole("Recruiter") || User.IsInRole("Admin"))
+        {
+            <button class="btn btn-outline-primary" id="likeBtn" data-cv-id="@Model.Id">
+                <i class="bi bi-heart"></i> Like
+                <span id="likeCount">@(Model.Likes?.Count ?? 0)</span>
+            </button>
+        }
+    </div>
+</div>
+
+<!-- Personal Information -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-person"></i> Personal Information</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            <div class="col-md-6">
+                <p><strong>Name:</strong> @Model.Candidate.FirstName @Model.Candidate.LastName</p>
+                <p><strong>Location:</strong> @Model.Candidate.Location</p>
+                <p><strong>Email:</strong> @Model.Candidate.Email</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Attributes -->
+<div class="card mb-4">
+    <div class="card-header">
+        <h5><i class="bi bi-list-check"></i> Attributes</h5>
+    </div>
+    <div class="card-body">
+        @foreach (var pa in positionAttributes)
+        {
+            var valueObj = Model.AttributeValues.FirstOrDefault(av => av.AttributeId == pa.AttributeId);
+            var currentValue = valueObj?.Value ?? "";
+            var isMissing = pa.IsRequired && string.IsNullOrWhiteSpace(currentValue);
+            <div class="mb-3 @(isMissing ? "border border-danger p-2 rounded" : "")">
+                <label class="fw-bold">@pa.Attribute.Name <small class="text-muted">(@pa.Attribute.Category)</small></label>
+                @if (isMissing)
+                {
+                    <span class="text-danger ms-2"><i class="bi bi-exclamation-circle"></i> Required</span>
+                }
+                @if (isReadOnly)
+                {
+                    <p class="form-control-plaintext">@currentValue</p>
+                }
+                else
+                {
+                    <input type="text" class="form-control cv-attribute-value"
+                           data-attribute-id="@pa.AttributeId"
+                           data-cv-id="@Model.Id"
+                           value="@currentValue"
+                           placeholder="Enter value..." />
+                }
+            </div>
+        }
+    </div>
+</div>
+
+<!-- Projects -->
+<div class="card">
+    <div class="card-header">
+        <h5><i class="bi bi-kanban"></i> Projects (@projects?.Count ?? 0)</h5>
+    </div>
+    <div class="card-body">
+        @if (projects != null && projects.Any())
+        {
+            foreach (var proj in projects)
+            {
+                <div class="mb-3 p-3 border rounded">
+                    <h6>@proj.Name</h6>
+                    <p class="text-muted">@proj.StartDate.ToString("yyyy-MM-dd") – @(proj.EndDate?.ToString("yyyy-MM-dd") ?? "Present")</p>
+                    <div class="mb-2">
+                        @foreach (var tech in proj.Technologies)
+                        {
+                            <span class="badge bg-secondary me-1">@tech</span>
+                        }
+                    </div>
+                    <div>@Html.Raw(Markdig.Markdown.ToHtml(proj.Description ?? ""))</div>
+                </div>
+            }
+        }
+        else
+        {
+            <p class="text-muted">No projects match this position's criteria.</p>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Auto-save attribute edits
+        document.querySelectorAll('.cv-attribute-value').forEach(input => {
+            input.addEventListener('change', async function() {
+                const cvId = this.dataset.cvId;
+                const attributeId = this.dataset.attributeId;
+                const value = this.value;
+                try {
+                    await axios.post('/CV/EditAttribute', {
+                        cvId: parseInt(cvId),
+                        attributeId: parseInt(attributeId),
+                        value: value
+                    });
+                    // Remove red border if previously missing
+                    const container = this.closest('.border-danger');
+                    if (container) {
+                        container.classList.remove('border-danger');
+                        const requiredSpan = container.querySelector('.bi-exclamation-circle');
+                        if (requiredSpan) requiredSpan.parentElement.remove();
+                    }
+                } catch (err) {
+                    alert('Error saving attribute.');
+                }
+            });
+        });
+
+        // Like button (for recruiters/admins)
+        const likeBtn = document.getElementById('likeBtn');
+        if (likeBtn) {
+            likeBtn.addEventListener('click', async function() {
+                const cvId = this.dataset.cvId;
+                try {
+                    const res = await axios.post('/CV/Like', { id: cvId });
+                    document.getElementById('likeCount').textContent = res.data.likes;
+                } catch (err) {
+                    alert('Error toggling like.');
+                }
+            });
+        }
+
+        // Disable publish button after click to prevent duplicate submission
+        document.getElementById('publishBtn')?.addEventListener('click', function() {
+            this.disabled = true;
+        });
+    </script>
+}

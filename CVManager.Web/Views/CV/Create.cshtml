@@ -1,0 +1,42 @@
+﻿@model IEnumerable<CVManager.Core.Entities.Position>
+@{
+    ViewData["Title"] = "Create CV";
+}
+
+<h2>Select a Position</h2>
+
+@if (!Model.Any())
+{
+    <div class="alert alert-info">No positions available for you at the moment.</div>
+}
+else
+{
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>Title</th>
+                <th>Company</th>
+                <th>Level</th>
+                <th>Attributes</th>
+                <th></th>
+            </tr>
+        </thead>
+        <tbody>
+            @foreach (var pos in Model)
+            {
+                <tr>
+                    <td>@pos.Title</td>
+                    <td>@pos.Company</td>
+                    <td>@pos.Level</td>
+                    <td>@pos.PositionAttributes?.Count</td>
+                    <td>
+                        <form asp-action="Create" method="post">
+                            <input type="hidden" name="positionId" value="@pos.Id" />
+                            <button type="submit" class="btn btn-sm btn-primary">Create CV</button>
+                        </form>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+}

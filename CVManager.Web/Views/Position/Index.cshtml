@@ -7,7 +7,12 @@
     <h2>@ViewData["Title"]</h2>
     <div>
         <a asp-action="Create" class="btn btn-primary"><i class="bi bi-plus-lg"></i> New Position</a>
-        <button id="deleteSelectedBtn" class="btn btn-outline-danger" disabled><i class="bi bi-trash"></i> Delete Selected</button>
+        <button id="duplicateSelectedBtn" class="btn btn-outline-secondary" disabled>
+            <i class="bi bi-copy"></i> Duplicate Selected
+        </button>
+        <button id="deleteSelectedBtn" class="btn btn-outline-danger" disabled>
+            <i class="bi bi-trash"></i> Delete Selected
+        </button>
     </div>
 </div>
 
@@ -19,7 +24,7 @@
     </div>
 </form>
 
-<form id="positionTableForm" method="post" asp-action="DeleteMultiple">
+<form id="positionTableForm" method="post">
     <table class="table table-hover">
         <thead>
             <tr>
@@ -29,6 +34,8 @@
                 <th>Level</th>
                 <th>Access</th>
                 <th>Attributes</th>
+                <th>CVs</th>
+                <th>Discussion</th>
                 <th>Updated</th>
             </tr>
         </thead>
@@ -44,6 +51,12 @@
                     <td>@pos.Level</td>
                     <td>@pos.AccessType</td>
                     <td>@pos.PositionAttributes?.Count</td>
+                    <td>@(pos.CVs?.Count ?? 0)</td>
+                    <td>
+                        <a asp-controller="Discussion" asp-action="Index" asp-route-positionId="@pos.Id" class="btn btn-sm btn-outline-info">
+                            <i class="bi bi-chat-dots"></i> Discussion
+                        </a>
+                    </td>
                     <td>@pos.UpdatedAt.ToString("g")</td>
                 </tr>
             }
@@ -56,21 +69,30 @@
         const selectAll = document.getElementById('selectAll');
         const checkboxes = document.querySelectorAll('.pos-checkbox');
         const deleteBtn = document.getElementById('deleteSelectedBtn');
+        const duplicateBtn = document.getElementById('duplicateSelectedBtn');
 
-        function updateDeleteButton() {
-            deleteBtn.disabled = document.querySelectorAll('.pos-checkbox:checked').length === 0;
+        function updateButtons() {
+            const anyChecked = document.querySelectorAll('.pos-checkbox:checked').length > 0;
+            deleteBtn.disabled = !anyChecked;
+            duplicateBtn.disabled = !anyChecked;
         }
 
         selectAll.addEventListener('change', function() {
             checkboxes.forEach(cb => cb.checked = this.checked);
-            updateDeleteButton();
+            updateButtons();
         });
 
-        checkboxes.forEach(cb => cb.addEventListener('change', updateDeleteButton));
+        checkboxes.forEach(cb => cb.addEventListener('change', updateButtons));
 
         deleteBtn.addEventListener('click', function() {
             const form = document.getElementById('positionTableForm');
             form.action = '@Url.Action("DeleteMultiple", "Position")';
+            form.submit();
+        });
+
+        duplicateBtn.addEventListener('click', function() {
+            const form = document.getElementById('positionTableForm');
+            form.action = '@Url.Action("DuplicateMultiple", "Position")';
             form.submit();
         });
     </script>
